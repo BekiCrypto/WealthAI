@@ -1,0 +1,2 @@
+# WealthAI
+Market Intelligence AI
