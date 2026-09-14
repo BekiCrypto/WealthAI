@@ -11,6 +11,7 @@ node_modules/
 .next/
 out/
 frontend/.env*.local
+next-env.d.ts
 
 # Env files
 .env
@@ -30,4 +31,5 @@ npm-debug.log*
 
 # DB
 *.sqlite3
+*.db
 pgdata/

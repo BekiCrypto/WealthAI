@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     app_name: str = "WealthAI Market Intelligence"
     environment: str = "development"
     api_prefix: str = "/api"
-    cors_origins: List[str] = ["http://localhost:3000"]
+    cors_origins: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     # Database
     database_url: str = "postgresql+psycopg2://wealthai:wealthai@localhost:5432/wealthai"
