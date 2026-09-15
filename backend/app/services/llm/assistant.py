@@ -1,11 +1,14 @@
 """Lets users ask the AI free-text questions (spec step 9), answered from the
 live world state / intelligence scores / calendar rather than the model's
 general knowledge alone. Degrades to a deterministic templated answer if no
-ANTHROPIC_API_KEY is configured, so the rest of the app stays usable without
-a key.
+ANTHROPIC_API_KEY is configured, or if the configured key fails at request
+time (bad credentials, no credits, rate limiting, a network blip) -- a key
+being *present* is not a guarantee every call succeeds, and chat should stay
+usable either way rather than surfacing a raw 500.
 """
 
 import json
+import logging
 
 from sqlalchemy.orm import Session
 
@@ -20,6 +23,8 @@ from app.services.ingestion.economic_calendar import upcoming_events
 from app.services.ingestion.market_data import price_history
 from app.services.ingestion.news_feed import latest_news
 from app.services.ingestion.providers import gate_trade_setup
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """You are the WealthAI Market Intelligence assistant. You are given a live \
 snapshot of the world state (macro regime), per-asset intelligence scores, trade setups (entry/ \
@@ -87,7 +92,7 @@ def build_context(db: Session) -> dict:
     }
 
 
-def _fallback_answer(query: str, context: dict) -> str:
+def _fallback_answer(query: str, context: dict, reason: str | None = None) -> str:
     regime = context["world_state"]["regime"]
     lines = [
         f"(No LLM key configured -- deterministic summary of live data.)",
@@ -113,7 +118,7 @@ def _fallback_answer(query: str, context: dict) -> str:
             f"Next major event: {next_event['name']} ({next_event['country']}) at {next_event['scheduled_at']}, "
             f"consensus {next_event['consensus']}, AI estimate {next_event['ai_estimate']}."
         )
-    lines.append(f"Your question was: \"{query}\" -- set ANTHROPIC_API_KEY to get a full narrative answer.")
+    lines.append(f"Your question was: \"{query}\" -- {reason or 'set ANTHROPIC_API_KEY to get a full narrative answer.'}")
     return "\n".join(lines)
 
 
@@ -124,19 +129,34 @@ def answer_query(db: Session, query: str) -> tuple[str, dict]:
     if not settings.anthropic_api_key:
         return _fallback_answer(query, context), context
 
-    from anthropic import Anthropic
+    from anthropic import APIStatusError, Anthropic
 
     client = Anthropic(api_key=settings.anthropic_api_key)
-    message = client.messages.create(
-        model=settings.llm_model,
-        max_tokens=1024,
-        system=SYSTEM_PROMPT,
-        messages=[
-            {
-                "role": "user",
-                "content": f"LIVE CONTEXT:\n{json.dumps(context, indent=2, default=str)}\n\nQUESTION: {query}",
-            }
-        ],
-    )
+    try:
+        message = client.messages.create(
+            model=settings.llm_model,
+            max_tokens=1024,
+            system=SYSTEM_PROMPT,
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"LIVE CONTEXT:\n{json.dumps(context, indent=2, default=str)}\n\nQUESTION: {query}",
+                }
+            ],
+        )
+    except APIStatusError as exc:
+        # A configured key is not a guarantee every call succeeds -- billing,
+        # rate limits, and outages all surface here. Log the real reason,
+        # but never crash the chat request over it; fall back like an unset key.
+        logger.warning("assistant: Anthropic API call failed (%s): %s", exc.status_code, exc.message)
+        detail = getattr(exc, "body", None)
+        api_message = detail.get("error", {}).get("message") if isinstance(detail, dict) else None
+        reason = f"the AI service returned an error just now ({api_message or exc.message}) -- showing a deterministic summary instead."
+        return _fallback_answer(query, context, reason=reason), context
+    except Exception:
+        logger.exception("assistant: unexpected error calling Anthropic API")
+        reason = "the AI service is unreachable right now -- showing a deterministic summary instead."
+        return _fallback_answer(query, context, reason=reason), context
+
     answer = "".join(block.text for block in message.content if block.type == "text")
     return answer, context
