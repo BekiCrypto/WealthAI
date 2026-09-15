@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import NavBar from "@/components/NavBar";
 import { GameProvider } from "@/lib/game/GameProvider";
 import LevelUpToast from "@/components/game/LevelUpToast";
@@ -8,6 +8,12 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "WealthAI — Market Intelligence",
   description: "A live storm-warning center for markets: tracked systems, advisories and forecast cones instead of bare buy/sell calls.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#0a0f16",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
