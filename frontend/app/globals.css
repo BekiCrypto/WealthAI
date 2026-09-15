@@ -10,6 +10,15 @@
   --neutral: #8b93a3;
   --accent: #4da3ff;
   --warn: #f5a623;
+
+  /* Outcome-band palette: a diverging pair encoding the release's policy
+     lean (hawkish/dovish), independent of the app's general bullish/bearish
+     greens and reds used elsewhere for asset direction. --shock is reserved
+     for a future "unscheduled shock" event type -- not used yet. */
+  --hawkish: #d9a441;
+  --dovish: #3fa79b;
+  --shock: #b3453f;
+  --band-track: #1c2230;
 }
 
 * {

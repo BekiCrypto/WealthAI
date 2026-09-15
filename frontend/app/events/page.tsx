@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { EconomicEvent } from "@/lib/types";
 import EventTable from "@/components/EventTable";
+import SyntheticDataBanner from "@/components/SyntheticDataBanner";
 
 export default function EventsPage() {
   const [events, setEvents] = useState<EconomicEvent[] | null>(null);
@@ -27,6 +28,12 @@ export default function EventsPage() {
       </div>
       {error && <div style={{ color: "var(--bearish)" }}>{error}</div>}
       {!events && !error && <div className="text-dim">Loading…</div>}
+      {events && events.some((e) => e.source === "seed") && (
+        <SyntheticDataBanner>
+          This calendar is a demo dataset (no licensed economic-calendar provider is wired up
+          yet) — consensus/previous figures and scheduling are illustrative, not real forecasts.
+        </SyntheticDataBanner>
+      )}
       {events && (
         <div className="panel" style={{ padding: 0 }}>
           <EventTable events={events} />

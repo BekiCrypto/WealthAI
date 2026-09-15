@@ -5,6 +5,8 @@ import type { EconomicEvent, EventScenario } from "@/lib/types";
 import { api } from "@/lib/api";
 import { directionClass, formatNumber } from "@/lib/format";
 import EventCountdown from "./EventCountdown";
+import OutcomeBand from "./OutcomeBand";
+import SyntheticDataBanner from "./SyntheticDataBanner";
 
 function importanceClass(importance: string): string {
   if (importance === "high") return "tag-warn";
@@ -12,22 +14,37 @@ function importanceClass(importance: string): string {
   return "tag-unknown";
 }
 
-function ScenarioDetail({ scenario }: { scenario: EventScenario }) {
+function ScenarioDetail({ scenario, eventUnit }: { scenario: EventScenario; eventUnit: string }) {
+  const released = scenario.outcome_band.actual !== null;
+  const activeScenarioKey = released
+    ? scenario.outcome_band.policy_lean === "hawkish"
+      ? "hot"
+      : scenario.outcome_band.policy_lean === "dovish"
+        ? "cool"
+        : "base"
+    : null;
+
   return (
     <tr>
       <td colSpan={8} style={{ background: "var(--bg-panel-alt)" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "8px 4px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "14px 4px" }}>
+          <OutcomeBand band={scenario.outcome_band} unit={eventUnit} />
+
           <div className="text-sm text-dim">
-            Likely range {formatNumber(scenario.likely_range[0])}–{formatNumber(scenario.likely_range[1])} · Hot{" "}
-            {formatNumber((scenario.probabilities.hot ?? 0) * 100, 0)}% · Cool{" "}
+            Hot {formatNumber((scenario.probabilities.hot ?? 0) * 100, 0)}% · Cool{" "}
             {formatNumber((scenario.probabilities.cool ?? 0) * 100, 0)}% · In-line{" "}
             {formatNumber((scenario.probabilities.in_line ?? 0) * 100, 0)}%
           </div>
+
           <div className="grid grid-cols-2">
             {Object.entries(scenario.scenarios).map(([key, s]) => (
-              <div key={key} className="panel" style={{ padding: 12 }}>
+              <div
+                key={key}
+                className="panel"
+                style={{ padding: 12, opacity: activeScenarioKey && activeScenarioKey !== key ? 0.45 : 1 }}
+              >
                 <div className="text-sm" style={{ fontWeight: 600, marginBottom: 8, textTransform: "capitalize" }}>
-                  {key} scenario
+                  {key} scenario {activeScenarioKey === key && "— what happened"}
                 </div>
                 <div className="text-dim text-sm" style={{ marginBottom: 8 }}>
                   {s.description}
@@ -42,6 +59,8 @@ function ScenarioDetail({ scenario }: { scenario: EventScenario }) {
               </div>
             ))}
           </div>
+
+          <SyntheticDataBanner>{scenario.disclosure}</SyntheticDataBanner>
         </div>
       </td>
     </tr>
@@ -118,7 +137,9 @@ export default function EventTable({ events }: { events: EconomicEvent[] }) {
                 )}
               </td>
             </tr>
-            {expanded === event.id && scenarios[event.id] && <ScenarioDetail scenario={scenarios[event.id]} />}
+            {expanded === event.id && scenarios[event.id] && (
+              <ScenarioDetail scenario={scenarios[event.id]} eventUnit={event.unit} />
+            )}
             {expanded === event.id && loadingId === event.id && (
               <tr>
                 <td colSpan={8} className="text-dim text-sm">

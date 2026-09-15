@@ -53,18 +53,23 @@ export default function AssetDetailPage() {
         <div className="panel">
           <div className="section-title">Technical Snapshot</div>
           <div className="grid grid-cols-4">
-            <Stat label="Last Price" value={formatNumber(technical.last_price)} />
             <Stat label="Trend" value={technical.trend.replace(/_/g, " ")} />
             <Stat label="RSI (14)" value={formatNumber(technical.rsi_14)} />
-            <Stat label="ATR (14)" value={formatNumber(technical.atr_14)} />
-            <Stat label="SMA 20" value={formatNumber(technical.sma_20)} />
-            <Stat label="SMA 50" value={formatNumber(technical.sma_50)} />
-            <Stat label="SMA 200" value={formatNumber(technical.sma_200)} />
-            <Stat label="EMA 20" value={formatNumber(technical.ema_20)} />
-            <Stat label="Support" value={formatNumber(technical.support)} />
-            <Stat label="Resistance" value={formatNumber(technical.resistance)} />
             <Stat label="20D Volatility (ann.)" value={technical.volatility_20d ? `${(technical.volatility_20d * 100).toFixed(1)}%` : "—"} />
+            {technical.redistributable && <Stat label="Last Price" value={formatNumber(technical.last_price)} />}
+            {technical.redistributable && <Stat label="ATR (14)" value={formatNumber(technical.atr_14)} />}
+            {technical.redistributable && <Stat label="SMA 20" value={formatNumber(technical.sma_20)} />}
+            {technical.redistributable && <Stat label="SMA 50" value={formatNumber(technical.sma_50)} />}
+            {technical.redistributable && <Stat label="SMA 200" value={formatNumber(technical.sma_200)} />}
+            {technical.redistributable && <Stat label="EMA 20" value={formatNumber(technical.ema_20)} />}
+            {technical.redistributable && <Stat label="Support" value={formatNumber(technical.support)} />}
+            {technical.redistributable && <Stat label="Resistance" value={formatNumber(technical.resistance)} />}
           </div>
+          {!technical.redistributable && technical.price_disclosure && (
+            <div className="text-dim text-sm" style={{ marginTop: 14 }}>
+              {technical.price_disclosure}
+            </div>
+          )}
         </div>
       )}
 

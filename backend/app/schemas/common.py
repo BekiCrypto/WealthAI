@@ -22,6 +22,7 @@ class EventOut(BaseModel):
     surprise: float | None = None
     unit: str
     status: str
+    source: str
 
     model_config = {"from_attributes": True}
 
@@ -60,8 +61,18 @@ class WorldStateOut(BaseModel):
 
 
 class TechnicalSnapshot(BaseModel):
+    """Internally, every field is always populated by compute_snapshot() so
+    macro_brain/intelligence_score can reason over real numbers regardless of
+    licensing. `redistributable`/`price_disclosure` default to the
+    full-fidelity internal case; routers/assets.py builds a gated copy for
+    the public API response when the symbol's provider isn't redistributable
+    (see services/ingestion/providers.py).
+    """
+
     symbol: str
-    last_price: float
+    redistributable: bool = True
+    price_disclosure: str | None = None
+    last_price: float | None
     trend: str
     rsi_14: float | None = None
     sma_20: float | None = None

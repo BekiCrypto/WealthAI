@@ -17,6 +17,7 @@ export interface EconomicEvent {
   surprise: number | null;
   unit: string;
   status: "scheduled" | "released";
+  source: string;
 }
 
 export interface ScoreBreakdown {
@@ -53,7 +54,9 @@ export interface WorldState {
 
 export interface TechnicalSnapshot {
   symbol: string;
-  last_price: number;
+  redistributable: boolean;
+  price_disclosure: string | null;
+  last_price: number | null;
   trend: string;
   rsi_14: number | null;
   sma_20: number | null;
@@ -86,6 +89,26 @@ export interface PriceBar {
   volume: number;
 }
 
+export interface OutcomeBand {
+  unit: string;
+  previous: number | null;
+  consensus: number | null;
+  low: number | null;
+  high: number | null;
+  ai_estimate: number | null;
+  ai_estimate_z: number | null;
+  ai_estimate_effective_z: number | null;
+  effective_range: [number, number] | null;
+  actual: number | null;
+  actual_z: number | null;
+  effective_z: number | null;
+  magnitude: "big" | "moderate" | "small" | null;
+  policy_lean: "hawkish" | "dovish" | "neutral" | null;
+  inverted: boolean;
+  basis: string;
+  disclosure: string;
+}
+
 export interface EventScenario {
   event: string;
   country: string;
@@ -94,5 +117,8 @@ export interface EventScenario {
   ai_estimate: number | null;
   likely_range: [number | null, number | null];
   probabilities: { hot: number | null; cool: number | null; in_line: number | null };
+  outcome_band: OutcomeBand;
+  basis: string;
+  disclosure: string;
   scenarios: Record<string, { description: string; asset_impact: Record<string, string> }>;
 }

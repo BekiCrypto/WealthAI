@@ -15,12 +15,104 @@ from app.services.ingestion import market_data
 # direction *if* the print comes in hot (above consensus). Cool prints imply
 # the opposite. This is the explainable link between "what happened" and
 # "what it means for markets" (spec step 4/6).
+#
+# This table -- like the surprise-probability heuristic in
+# economic_calendar.py -- is hand-picked from textbook macro relationships,
+# not fitted to measured historical reactions. It is deliberately marked
+# `basis: "heuristic"` everywhere it's returned from this module so the UI
+# can warn the user rather than presenting it as calibrated fact. Replacing
+# it with real statistics is the backtest-pipeline roadmap item.
 CATEGORY_ASSET_IMPACT = {
     "inflation": {"GC=F": -1, "DX-Y.NYB": 1, "^GSPC": -1, "BTC-USD": -1, "^TNX": 1},
     "employment": {"GC=F": -1, "DX-Y.NYB": 1, "^GSPC": 0, "^TNX": 1},
     "growth": {"GC=F": 0, "^GSPC": 1, "DX-Y.NYB": 0.3},
     "central_bank": {"GC=F": -1, "DX-Y.NYB": 1, "^GSPC": -1, "^TNX": 1, "BTC-USD": -1},
 }
+
+# Events where a HIGHER print is actually the dovish/easing signal (bad for
+# the currency/hawkish case), not the hawkish one -- e.g. a higher
+# unemployment rate or more jobless claims means a weaker labor market, the
+# opposite of a higher payrolls or CPI print. Getting this backwards is a
+# common retail-tool mistake this app explicitly guards against.
+INVERTED_EVENTS = {"US Unemployment Rate"}
+
+HEURISTIC_DISCLOSURE = (
+    "Bands and probabilities are derived from this release's own consensus/previous spread "
+    "using a simple heuristic model (basis=\"heuristic\"), not yet calibrated against measured "
+    "historical market reactions. See the README roadmap for the planned backtest pipeline."
+)
+
+
+def _band_sigma(event: EconomicEvent) -> float | None:
+    if event.ai_estimate_low is None or event.ai_estimate_high is None:
+        return None
+    sigma = (event.ai_estimate_high - event.ai_estimate_low) / 2
+    return sigma if sigma > 0 else None
+
+
+def _magnitude(abs_z: float) -> str:
+    if abs_z >= 1.5:
+        return "big"
+    if abs_z >= 0.5:
+        return "moderate"
+    return "small"
+
+
+def _policy_lean(z: float, inverted: bool) -> str:
+    effective = -z if inverted else z
+    if effective > 0.5:
+        return "hawkish"
+    if effective < -0.5:
+        return "dovish"
+    return "neutral"
+
+
+def build_outcome_band(event: EconomicEvent) -> dict:
+    """The diverging miss<->beat band that drives the event card's hero
+    visualization: consensus at the center, the AI's likely range either
+    side of it, and -- once released -- where the actual print landed,
+    expressed as a z-score against this release's own expected spread so
+    the band is scaled to the event, not an arbitrary fixed axis.
+    """
+    sigma = _band_sigma(event)
+    inverted = event.name in INVERTED_EVENTS
+    sign = -1 if inverted else 1
+
+    ai_z = round((event.ai_estimate - event.consensus) / sigma, 2) if (sigma and event.ai_estimate is not None and event.consensus is not None) else None
+
+    actual_z = None
+    effective_z = None
+    magnitude = None
+    policy_lean = None
+    if sigma and event.actual is not None and event.consensus is not None:
+        actual_z = round((event.actual - event.consensus) / sigma, 2)
+        effective_z = round(sign * actual_z, 2)
+        magnitude = _magnitude(abs(actual_z))
+        policy_lean = _policy_lean(actual_z, inverted)
+
+    return {
+        "unit": event.unit,
+        "previous": event.previous,
+        "consensus": event.consensus,
+        "low": event.ai_estimate_low,
+        "high": event.ai_estimate_high,
+        "ai_estimate": event.ai_estimate,
+        "ai_estimate_z": ai_z,
+        # effective_z / effective_range are ai_z and [-1, 1] rotated by `sign` so the
+        # horizontal position on the outcome band always means "dovish <-> hawkish",
+        # regardless of whether the underlying metric is inverted -- the frontend
+        # should plot position from these, not from the raw z-scores above.
+        "ai_estimate_effective_z": round(sign * ai_z, 2) if ai_z is not None else None,
+        "effective_range": [sign * -1.0, sign * 1.0] if sigma else None,
+        "actual": event.actual,
+        "actual_z": actual_z,
+        "effective_z": effective_z,
+        "magnitude": magnitude,
+        "policy_lean": policy_lean,
+        "inverted": inverted,
+        "basis": "heuristic",
+        "disclosure": HEURISTIC_DISCLOSURE,
+    }
 
 
 def generate_pre_event_scenario(event: EconomicEvent) -> dict:
@@ -49,6 +141,9 @@ def generate_pre_event_scenario(event: EconomicEvent) -> dict:
             "cool": event.prob_downside_surprise,
             "in_line": event.prob_inline,
         },
+        "outcome_band": build_outcome_band(event),
+        "basis": "heuristic",
+        "disclosure": HEURISTIC_DISCLOSURE,
         "scenarios": {
             "hot": {"description": f"{event.name} prints above consensus", "asset_impact": scenario_impacts(True)},
             "cool": {"description": f"{event.name} prints below consensus", "asset_impact": scenario_impacts(False)},
@@ -81,6 +176,9 @@ def record_post_release_reaction(db: Session, event: EconomicEvent) -> dict:
         "surprise": surprise,
         "surprise_direction": direction,
         "expected_asset_reaction": asset_reaction,
+        "outcome_band": build_outcome_band(event),
+        "basis": "heuristic",
+        "disclosure": HEURISTIC_DISCLOSURE,
         "note": "Compare expected_asset_reaction against realized price moves to check whether "
                 "the market followed the textbook relationship or diverged (regime-dependent).",
     }

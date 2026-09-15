@@ -17,7 +17,7 @@ from app.services.analysis.macro_brain import classify_world_state
 from app.services.analysis.prediction_engine import resolve_due_predictions
 from app.services.ingestion.economic_calendar import seed_calendar, sync_actuals_from_fred
 from app.services.ingestion.geopolitical import fetch_and_store_geo_events
-from app.services.ingestion.market_data import fetch_and_store_prices
+from app.services.ingestion.market_data import fetch_and_store_crypto_prices, fetch_and_store_prices
 from app.services.ingestion.news_feed import fetch_and_store_news
 
 logger = logging.getLogger(__name__)
@@ -30,6 +30,16 @@ def job_refresh_market_data():
         fetch_and_store_prices(db)
     except Exception:
         logger.exception("scheduler: market data refresh failed")
+    finally:
+        db.close()
+
+
+def job_refresh_crypto_prices():
+    db = SessionLocal()
+    try:
+        fetch_and_store_crypto_prices(db)
+    except Exception:
+        logger.exception("scheduler: crypto price refresh failed")
     finally:
         db.close()
 
@@ -88,6 +98,7 @@ def bootstrap():
     finally:
         db.close()
     job_refresh_market_data()
+    job_refresh_crypto_prices()
     job_refresh_news()
     job_refresh_geopolitical()
     job_refresh_world_state()
@@ -96,6 +107,7 @@ def bootstrap():
 def create_scheduler() -> BackgroundScheduler:
     scheduler = BackgroundScheduler(timezone="UTC")
     scheduler.add_job(job_refresh_market_data, "interval", seconds=settings.market_data_interval, id="market_data")
+    scheduler.add_job(job_refresh_crypto_prices, "interval", seconds=settings.market_data_interval, id="crypto_prices")
     scheduler.add_job(job_refresh_news, "interval", seconds=settings.news_interval, id="news")
     scheduler.add_job(job_refresh_geopolitical, "interval", seconds=settings.geopolitical_interval, id="geopolitical")
     scheduler.add_job(job_refresh_calendar, "interval", seconds=settings.economic_calendar_interval, id="calendar")

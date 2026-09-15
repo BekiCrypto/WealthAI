@@ -18,6 +18,17 @@ chart, and a functioning chat endpoint). It intentionally uses free/keyless
 data sources with graceful degradation everywhere a production deployment
 would plug in a licensed feed — see [Data sources](#data-sources-and-what-a-production-version-would-change) below.
 
+Two things worth knowing before you rely on any number this app shows:
+
+1. **Raw prices are withheld for anything not licensed to be shown publicly.**
+   Most free market-data plans (and `yfinance`, which isn't a licensed API at
+   all) permit personal use only, not redistribution to third parties. See
+   [Data licensing](#data-licensing) below.
+2. **Predictions and scenario bands are heuristic, not calibrated.** They're
+   tagged `basis: "heuristic"` everywhere they appear, with a visible
+   synthetic-data warning in the UI, until a real backtest pipeline exists
+   (see Roadmap).
+
 ## Architecture
 
 ```
@@ -112,12 +123,41 @@ All endpoints are under `/api` (see `/docs` for full schemas):
 - `GET /news/latest`
 - `POST /chat` — `{ "query": "..." }`
 
+## Data licensing
+
+Every price symbol is tagged with a provider in `app/services/ingestion/providers.py`,
+and that provider carries a `redistributable` flag -- the one thing that
+decides whether raw numbers reach the API/UI or get withheld in favor of
+derived-only output:
+
+- **`yfinance`** (equities, commodities, FX, rates) → `redistributable = False`.
+  It scrapes Yahoo's undocumented endpoints rather than using a licensed API,
+  so `/assets/{symbol}/technical` returns `last_price: null` and all
+  price-scale fields (SMA/EMA/ATR/support/resistance) as `null`, with a
+  `price_disclosure` string explaining why. `/assets/{symbol}/prices` returns
+  `403`. Only the interpretation layer survives: `trend` (categorical),
+  `rsi_14` (a bounded 0-100 oscillator), `volatility_20d` (a ratio), and the
+  intelligence score -- our own computed output, not the underlying data.
+- **Coinbase's public exchange API** (crypto: `BTC-USD`, `ETH-USD`) →
+  `redistributable = True`. It's unauthenticated and meant for third-party
+  display, so raw prices and OHLCV show live, same as any crypto tracker.
+
+The embedded TradingView chart is unaffected by any of this either way --
+it's TradingView's own authorized public widget, not our redistribution of
+scraped data, so it shows live prices for every symbol.
+
+Swapping in a licensed feed for stocks/commodities/FX later means adding one
+`ProviderInfo` entry and updating `provider_for_symbol`; nothing downstream
+(routers, frontend) needs to change -- the gate just stops firing.
+
 ## Data sources (and what a production version would change)
 
 | Need | This build uses | Production would use |
 |---|---|---|
-| Market prices | `yfinance` (free) | Licensed feed (Polygon, Tiingo, Refinitiv) |
-| Economic calendar + consensus | Seeded demo calendar; actuals backfilled from FRED if `FRED_API_KEY` is set | TradingEconomics / Investing.com licensed calendar |
+| Market prices (equities/commodities/FX/rates) | `yfinance`, derived-only (see above) | Licensed feed (Polygon, Tiingo, Refinitiv) |
+| Market prices (crypto) | Coinbase public exchange API, shown live | Same, or a licensed aggregator for more venues |
+| Economic calendar + consensus | Seeded demo calendar (flagged `source: "seed"`, shown with a UI warning); actuals backfilled from FRED if `FRED_API_KEY` is set | TradingEconomics / Investing.com licensed calendar |
+| Surprise probabilities + asset-impact scenarios | Hand-picked heuristic (`basis: "heuristic"`, UI-flagged) derived from each release's own consensus/previous spread | A model calibrated against measured historical reactions (see Roadmap) |
 | News | Public RSS feeds, naive lexicon sentiment | Licensed news API + a real sentiment/NLP model (FinBERT etc.) |
 | Geopolitical events | GDELT DOC 2.0 API (article search), Goldstein scale *approximated* from our own tone lexicon | Full GDELT Events table, or a licensed geopolitical risk feed |
 | LLM | Claude via `ANTHROPIC_API_KEY`; falls back to a deterministic data summary if unset | Same, likely with a larger/curated context window and RAG over historical analysis |
@@ -132,9 +172,14 @@ skipped rather than crashing the scheduler or the request.
   websocket-push the frontend instead of polling.
 - Kafka for event streaming once ingestion volume justifies it (per the
   original tech plan: Redis first, Kafka later).
-- Replace the heuristic pre-release estimate (`economic_calendar.py::_estimate_probabilities`)
-  with a model calibrated against `PredictionOutcome` history once enough
-  predictions have been recorded.
+- **The backtest pipeline** — the single most important next step. Everything
+  under `basis: "heuristic"` (surprise probabilities in
+  `economic_calendar.py::_estimate_probabilities`, asset-impact scenarios and
+  the outcome-band z-scores in `prediction_engine.py`) is a hand-picked
+  textbook relationship, not measured history. Building a job that ingests
+  real minute-bar reactions around past releases and buckets them by surprise
+  size is what turns these into `basis: "calibrated"` and is the only thing
+  that makes this a defensible product rather than a nice interface.
 - Alembic migrations (currently `Base.metadata.create_all` on startup, fine
   for a single-environment v1, not for iterating on schema in production).
 - Multi-timeframe technical analysis (currently daily bars only).
