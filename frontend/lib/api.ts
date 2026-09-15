@@ -1,6 +1,7 @@
 import type {
   EconomicEvent,
   EventScenario,
+  IndicatorEducation,
   NewsItem,
   PriceBar,
   ScoreBreakdown,
@@ -41,6 +42,7 @@ export const api = {
     apiGet<PriceBar[]>(`/assets/${encodeURIComponent(symbol)}/prices?limit=${limit}`),
   newsLatest: (limit = 30) => apiGet<NewsItem[]>(`/news/latest?limit=${limit}`),
   chat: (query: string) => apiPost<{ answer: string; used_context: unknown }>("/chat", { query }),
+  educationList: () => apiGet<IndicatorEducation[]>("/education"),
 };
 
 export const TRACKED_SYMBOLS = [

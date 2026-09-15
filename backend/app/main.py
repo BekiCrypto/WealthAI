@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import Base, engine
-from app.routers import assets, chat, events, health, news, predictions, world_state
+from app.routers import assets, chat, education, events, health, news, predictions, world_state
 from app.scheduler import bootstrap, create_scheduler
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -45,6 +45,7 @@ app.include_router(world_state.router, prefix=settings.api_prefix)
 app.include_router(predictions.router, prefix=settings.api_prefix)
 app.include_router(news.router, prefix=settings.api_prefix)
 app.include_router(chat.router, prefix=settings.api_prefix)
+app.include_router(education.router, prefix=settings.api_prefix)
 
 
 @app.get("/")

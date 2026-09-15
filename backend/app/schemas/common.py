@@ -107,3 +107,22 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     used_context: dict
+
+
+class IndicatorEducation(BaseModel):
+    """An explicit, educational briefing on an economic indicator: what it
+    is, why it matters, and how to read it -- meant to teach the reader, not
+    just hand them a decision.
+    """
+
+    name: str
+    category: str
+    what_it_is: str
+    why_it_matters: str
+    market_impact_chain: str
+    how_to_read: str
+    historical_context: str
+    watch_for: str
+    inverted: bool
+
+    model_config = {"from_attributes": True}

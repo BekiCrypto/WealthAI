@@ -7,6 +7,7 @@ import { directionClass, formatNumber } from "@/lib/format";
 import EventCountdown from "./EventCountdown";
 import OutcomeBand from "./OutcomeBand";
 import SyntheticDataBanner from "./SyntheticDataBanner";
+import IndicatorBriefing from "./IndicatorBriefing";
 
 function importanceClass(importance: string): string {
   if (importance === "high") return "tag-warn";
@@ -59,6 +60,8 @@ function ScenarioDetail({ scenario, eventUnit }: { scenario: EventScenario; even
               </div>
             ))}
           </div>
+
+          <IndicatorBriefing briefing={scenario.education} collapsible defaultOpen={false} />
 
           <SyntheticDataBanner>{scenario.disclosure}</SyntheticDataBanner>
         </div>

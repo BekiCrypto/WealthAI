@@ -60,6 +60,17 @@ Each spec step maps to a concrete module:
 | 9. Ask the AI | `app/services/llm/assistant.py`, `/api/chat` |
 | 10. Learn from every prediction | `Prediction` / `PredictionOutcome` models, `calibration_stats` |
 
+Beyond the spec: **the app is meant to teach, not just call directions.**
+`app/services/education/glossary.py` is a hand-written briefing for every
+indicator on the calendar -- what it is, why it matters, how a surprise
+transmits through rates/currency/risk appetite to reach an asset, historical
+context, and what to watch for -- including an explicit warning on
+*inverted* indicators (like the unemployment rate, where a higher print is
+the dovish outcome) that retail tools commonly get backwards. It's exposed
+as a standalone library at `/learn`, embedded inline on every event's
+scenario detail, and fed into the chat assistant's context so its answers
+explain the mechanism, not just the call.
+
 ## Getting started
 
 ### Docker (recommended)
@@ -122,6 +133,7 @@ All endpoints are under `/api` (see `/docs` for full schemas):
 - `GET /predictions`, `POST /predictions`, `GET /predictions/calibration`
 - `GET /news/latest`
 - `POST /chat` — `{ "query": "..." }`
+- `GET /education` — the full indicator glossary; `GET /education/{name}` for one entry
 
 ## Data licensing
 

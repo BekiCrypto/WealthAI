@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.models.event import EconomicEvent
 from app.models.prediction import Prediction, PredictionOutcome
+from app.services.education.glossary import get_education
 from app.services.ingestion import market_data
 
 # Which assets each event category is expected to move, and in which
@@ -144,6 +145,7 @@ def generate_pre_event_scenario(event: EconomicEvent) -> dict:
         "outcome_band": build_outcome_band(event),
         "basis": "heuristic",
         "disclosure": HEURISTIC_DISCLOSURE,
+        "education": get_education(event.name, event.category).__dict__,
         "scenarios": {
             "hot": {"description": f"{event.name} prints above consensus", "asset_impact": scenario_impacts(True)},
             "cool": {"description": f"{event.name} prints below consensus", "asset_impact": scenario_impacts(False)},
@@ -179,6 +181,7 @@ def record_post_release_reaction(db: Session, event: EconomicEvent) -> dict:
         "outcome_band": build_outcome_band(event),
         "basis": "heuristic",
         "disclosure": HEURISTIC_DISCLOSURE,
+        "education": get_education(event.name, event.category).__dict__,
         "note": "Compare expected_asset_reaction against realized price moves to check whether "
                 "the market followed the textbook relationship or diverged (regime-dependent).",
     }

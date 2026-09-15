@@ -12,17 +12,23 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.services.analysis.intelligence_score import compute_all_scores
 from app.services.analysis.macro_brain import classify_world_state
+from app.services.education.glossary import get_education
 from app.services.ingestion.economic_calendar import upcoming_events
 from app.services.ingestion.news_feed import latest_news
 
 SYSTEM_PROMPT = """You are the WealthAI Market Intelligence assistant. You are given a live \
 snapshot of the world state (macro regime), per-asset intelligence scores, upcoming economic \
-events, and recent headlines. Answer the user's question using ONLY this context plus your \
-general financial knowledge for explanation -- do not invent live prices, data prints, or news \
-you were not given. Structure answers around: what happened -> why it matters -> what the \
-market expects -> what might happen next -> your confidence -> what would prove you wrong. \
-Keep answers concise and concrete. Never give this as individual financial advice; frame \
-everything as probabilistic intelligence, not certainty."""
+events (each with an educational briefing on what the indicator is and how to read it), and \
+recent headlines. Answer the user's question using ONLY this context plus your general \
+financial knowledge for explanation -- do not invent live prices, data prints, or news you were \
+not given. Structure answers around: what happened -> why it matters -> what the market expects \
+-> what might happen next -> your confidence -> what would prove you wrong. This app is \
+explicitly educational: don't just hand over a bullish/bearish call -- teach the reader the \
+underlying mechanism (e.g. how a surprise in this indicator transmits through rates, currency \
+and risk appetite to reach the asset in question), and flag when an indicator is "inverted" \
+(a higher print is the dovish/bearish-for-hawks outcome, like the unemployment rate) since that \
+is a common source of retail mistakes. Keep answers concise and concrete. Never give this as \
+individual financial advice; frame everything as probabilistic intelligence, not certainty."""
 
 
 def build_context(db: Session) -> dict:
@@ -39,6 +45,11 @@ def build_context(db: Session) -> dict:
             "status": e.status,
             "actual": e.actual,
             "surprise": e.surprise,
+            "education": {
+                "why_it_matters": get_education(e.name, e.category).why_it_matters,
+                "market_impact_chain": get_education(e.name, e.category).market_impact_chain,
+                "inverted": get_education(e.name, e.category).inverted,
+            },
         }
         for e in upcoming_events(db)
     ]

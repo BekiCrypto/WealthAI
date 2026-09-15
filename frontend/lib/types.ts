@@ -89,6 +89,18 @@ export interface PriceBar {
   volume: number;
 }
 
+export interface IndicatorEducation {
+  name: string;
+  category: string;
+  what_it_is: string;
+  why_it_matters: string;
+  market_impact_chain: string;
+  how_to_read: string;
+  historical_context: string;
+  watch_for: string;
+  inverted: boolean;
+}
+
 export interface OutcomeBand {
   unit: string;
   previous: number | null;
@@ -120,5 +132,6 @@ export interface EventScenario {
   outcome_band: OutcomeBand;
   basis: string;
   disclosure: string;
+  education: IndicatorEducation;
   scenarios: Record<string, { description: string; asset_impact: Record<string, string> }>;
 }
