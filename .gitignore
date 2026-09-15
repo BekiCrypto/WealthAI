@@ -33,3 +33,9 @@ npm-debug.log*
 *.sqlite3
 *.db
 pgdata/
+
+# Impeccable design-skill QA evidence (transient screenshots, not durable
+# project docs -- design.json and surfaces/ ARE kept, see frontend/DESIGN.md)
+frontend/.impeccable/review/
+frontend/.impeccable/mocks/
+frontend/.impeccable/build/

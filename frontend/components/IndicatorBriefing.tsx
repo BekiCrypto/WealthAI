@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { IndicatorEducation } from "@/lib/types";
+import { useGame } from "@/lib/game/GameProvider";
 
 const SECTIONS: { key: keyof IndicatorEducation; label: string }[] = [
   { key: "what_it_is", label: "What it is" },
@@ -30,12 +31,26 @@ export default function IndicatorBriefing({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen || !collapsible);
+  const { awardBriefingRead } = useGame();
+
+  function toggle() {
+    if (!collapsible) return;
+    setOpen((v) => {
+      if (!v) awardBriefingRead(briefing.name);
+      return !v;
+    });
+  }
+
+  useEffect(() => {
+    if (!collapsible) awardBriefingRead(briefing.name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collapsible, briefing.name]);
 
   return (
     <div className="panel" style={{ padding: 16 }}>
       <div
         style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: collapsible ? "pointer" : "default" }}
-        onClick={() => collapsible && setOpen((v) => !v)}
+        onClick={toggle}
       >
         <div>
           <h3 style={{ fontSize: 15 }}>{briefing.name}</h3>
@@ -45,7 +60,7 @@ export default function IndicatorBriefing({
           </span>
         </div>
         {collapsible && (
-          <span className="text-sm" style={{ color: "var(--accent)" }}>
+          <span className="text-sm" style={{ color: "var(--pressure-bright)" }}>
             {open ? "Hide" : "Learn about this indicator"}
           </span>
         )}

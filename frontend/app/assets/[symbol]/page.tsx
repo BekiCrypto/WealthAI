@@ -5,12 +5,15 @@ import { useParams } from "next/navigation";
 import { api, SYMBOL_LABELS } from "@/lib/api";
 import type { ScoreBreakdown, TechnicalSnapshot, TradeSetup } from "@/lib/types";
 import { directionClass, formatNumber } from "@/lib/format";
+import { useGame } from "@/lib/game/GameProvider";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import TradeSetupCard from "@/components/TradeSetupCard";
+import PressureGauge from "@/components/PressureGauge";
 
 export default function AssetDetailPage() {
   const params = useParams<{ symbol: string }>();
   const symbol = decodeURIComponent(params.symbol);
+  const { awardTradeSetupView } = useGame();
 
   const [score, setScore] = useState<ScoreBreakdown | null>(null);
   const [technical, setTechnical] = useState<TechnicalSnapshot | null>(null);
@@ -27,6 +30,7 @@ export default function AssetDetailPage() {
         setTechnical(t);
         setSetup(ts);
         setError(null);
+        if (ts.direction !== "none") awardTradeSetupView(symbol);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load asset data");
       }
@@ -37,15 +41,17 @@ export default function AssetDetailPage() {
       cancelled = true;
       clearInterval(id);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbol]);
 
   const label = SYMBOL_LABELS[symbol] || symbol;
+  const scoreColor = score && score.bullish_pct >= 50 ? "var(--bullish)" : "var(--bearish)";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
-        <h1 style={{ fontSize: 24 }}>{label}</h1>
-        <span className="text-dim mono text-sm">{symbol}</span>
+        <h1 style={{ fontSize: 26 }}>{label}</h1>
+        <span className="text-dim mono text-sm">Tracked system {symbol}</span>
       </div>
 
       <TradingViewWidget symbol={symbol} />
@@ -56,8 +62,8 @@ export default function AssetDetailPage() {
 
       {technical && (
         <div className="panel">
-          <div className="section-title">Technical Snapshot</div>
-          <div className="grid grid-cols-4">
+          <h2 style={{ fontSize: 18 }}>Instrument Readout</h2>
+          <div className="grid grid-cols-4" style={{ marginTop: 16 }}>
             <Stat label="Trend" value={technical.trend.replace(/_/g, " ")} />
             <Stat label="RSI (14)" value={formatNumber(technical.rsi_14)} />
             <Stat label="20D Volatility (ann.)" value={technical.volatility_20d ? `${(technical.volatility_20d * 100).toFixed(1)}%` : "—"} />
@@ -80,21 +86,22 @@ export default function AssetDetailPage() {
 
       {score && (
         <div className="panel">
-          <div className="section-title">Intelligence Score</div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 14 }}>
-            <span className="mono" style={{ fontSize: 32, fontWeight: 700 }}>
-              {score.bullish_pct}%
-            </span>
-            <span className="text-dim">bullish</span>
-            <span className="tag">{score.confidence} confidence</span>
+          <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" }}>
+            <PressureGauge value={score.bullish_pct} color={scoreColor} label={score.bullish_pct >= 50 ? "bullish" : "bearish"} size={96} />
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <h2 style={{ fontSize: 18 }}>Intelligence Reading</h2>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "10px 0" }}>
+                <span className="tag">{score.confidence} confidence</span>
+                <span className={`tag ${directionClass(score.macro)}`}>Macro: {score.macro}</span>
+                <span className={`tag ${directionClass(score.technical)}`}>Technical: {score.technical}</span>
+                <span className={`tag ${directionClass(score.sentiment)}`}>Sentiment: {score.sentiment}</span>
+                <span className={`tag ${directionClass(score.geopolitical)}`}>Geopolitical: {score.geopolitical}</span>
+              </div>
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-            <span className={`tag ${directionClass(score.macro)}`}>Macro: {score.macro}</span>
-            <span className={`tag ${directionClass(score.technical)}`}>Technical: {score.technical}</span>
-            <span className={`tag ${directionClass(score.sentiment)}`}>Sentiment: {score.sentiment}</span>
-            <span className={`tag ${directionClass(score.geopolitical)}`}>Geopolitical: {score.geopolitical}</span>
+          <div className="text-dim text-sm" style={{ fontWeight: 600, margin: "16px 0 8px" }}>
+            Why
           </div>
-          <div className="section-title">Why</div>
           <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
             {score.reasons.map((r, i) => (
               <li key={i} className="text-sm">

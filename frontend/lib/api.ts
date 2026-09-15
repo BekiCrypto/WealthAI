@@ -34,6 +34,7 @@ async function apiPost<T>(path: string, body: unknown): Promise<T> {
 
 export const api = {
   worldState: () => apiGet<WorldState>("/world-state"),
+  worldStateHistory: (limit = 50) => apiGet<WorldState[]>(`/world-state/history?limit=${limit}`),
   calendar: (hoursAhead = 24 * 14) => apiGet<EconomicEvent[]>(`/events/calendar?hours_ahead=${hoursAhead}`),
   eventScenario: (id: number) => apiGet<EventScenario>(`/events/${id}/scenario`),
   assetScores: () => apiGet<Record<string, ScoreBreakdown>>("/assets/scores"),

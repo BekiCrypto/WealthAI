@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api";
+import { useGame } from "@/lib/game/GameProvider";
 
 interface Message {
   role: "user" | "assistant";
@@ -21,6 +22,7 @@ export default function ChatPanel() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { awardChatQuestion } = useGame();
 
   async function send(query: string) {
     if (!query.trim() || loading) return;
@@ -31,6 +33,7 @@ export default function ChatPanel() {
     try {
       const res = await api.chat(query);
       setMessages((prev) => [...prev, { role: "assistant", text: res.answer }]);
+      awardChatQuestion();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to reach the AI assistant.");
     } finally {
@@ -41,17 +44,22 @@ export default function ChatPanel() {
   return (
     <div className="panel" style={{ display: "flex", flexDirection: "column", gap: 16, minHeight: 480 }}>
       <div>
-        <h2 style={{ fontSize: 18 }}>Ask the Market Intelligence AI</h2>
+        <h1 style={{ fontSize: 22 }}>Ask the Forecaster</h1>
         <p className="text-dim text-sm">
-          Answers are grounded in the live world state, intelligence scores, calendar and recent headlines —
-          not general knowledge alone.
+          Answers are grounded in the live world state, tracked systems, advisory schedule and recent
+          headlines — not general knowledge alone.
         </p>
       </div>
 
       {messages.length === 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {SUGGESTIONS.map((s) => (
-            <button key={s} className="tag" style={{ cursor: "pointer" }} onClick={() => send(s)}>
+            <button
+              key={s}
+              className="tag"
+              style={{ cursor: "pointer", whiteSpace: "normal", textAlign: "left", maxWidth: "100%" }}
+              onClick={() => send(s)}
+            >
               {s}
             </button>
           ))}
@@ -69,13 +77,13 @@ export default function ChatPanel() {
               fontSize: 14,
             }}
           >
-            <div className="text-dim text-sm" style={{ marginBottom: 6, fontWeight: 600 }}>
-              {m.role === "user" ? "You" : "WealthAI"}
+            <div className="text-dim text-sm mono" style={{ marginBottom: 6, fontWeight: 700 }}>
+              {m.role === "user" ? "YOU" : "FORECASTER"}
             </div>
             {m.text}
           </div>
         ))}
-        {loading && <div className="text-dim text-sm">Thinking…</div>}
+        {loading && <div className="text-dim text-sm">Reading the instruments…</div>}
         {error && <div style={{ color: "var(--bearish)" }}>{error}</div>}
       </div>
 
@@ -89,7 +97,7 @@ export default function ChatPanel() {
         <input
           className="input"
           style={{ flex: 1 }}
-          placeholder="Ask about Gold, USD, stocks, crypto, or an upcoming event…"
+          placeholder="Ask about Gold, USD, stocks, crypto, or an upcoming advisory…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />

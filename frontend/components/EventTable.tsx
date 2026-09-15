@@ -1,11 +1,12 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type { EconomicEvent, EventScenario } from "@/lib/types";
 import { api } from "@/lib/api";
 import { directionClass, formatNumber } from "@/lib/format";
+import { useGame } from "@/lib/game/GameProvider";
 import EventCountdown from "./EventCountdown";
-import OutcomeBand from "./OutcomeBand";
+import ForecastCone from "./ForecastCone";
 import SyntheticDataBanner from "./SyntheticDataBanner";
 import IndicatorBriefing from "./IndicatorBriefing";
 
@@ -15,7 +16,8 @@ function importanceClass(importance: string): string {
   return "tag-unknown";
 }
 
-function ScenarioDetail({ scenario, eventUnit }: { scenario: EventScenario; eventUnit: string }) {
+function ScenarioDetail({ scenario, eventUnit, eventId }: { scenario: EventScenario; eventUnit: string; eventId: number }) {
+  const { awardScenarioView } = useGame();
   const released = scenario.outcome_band.actual !== null;
   const activeScenarioKey = released
     ? scenario.outcome_band.policy_lean === "hawkish"
@@ -25,11 +27,16 @@ function ScenarioDetail({ scenario, eventUnit }: { scenario: EventScenario; even
         : "base"
     : null;
 
+  useEffect(() => {
+    awardScenarioView(String(eventId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId]);
+
   return (
     <tr>
       <td colSpan={8} style={{ background: "var(--bg-panel-alt)" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "14px 4px" }}>
-          <OutcomeBand band={scenario.outcome_band} unit={eventUnit} />
+          <ForecastCone band={scenario.outcome_band} unit={eventUnit} />
 
           <div className="text-sm text-dim">
             Hot {formatNumber((scenario.probabilities.hot ?? 0) * 100, 0)}% · Cool{" "}
@@ -141,7 +148,7 @@ export default function EventTable({ events }: { events: EconomicEvent[] }) {
               </td>
             </tr>
             {expanded === event.id && scenarios[event.id] && (
-              <ScenarioDetail scenario={scenarios[event.id]} eventUnit={event.unit} />
+              <ScenarioDetail scenario={scenarios[event.id]} eventUnit={event.unit} eventId={event.id} />
             )}
             {expanded === event.id && loadingId === event.id && (
               <tr>

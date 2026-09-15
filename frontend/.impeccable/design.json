@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-15T00:00:00Z",
+  "title": "Design System: WealthAI — Storm Warning",
+  "extensions": {
+    "colorMeta": {
+      "pressure-bright": { "role": "primary", "displayName": "Pressure Teal", "canonical": "#3ecad9", "tonalRamp": ["#04141a", "#0a2a30", "#0f4c56", "#1a6a76", "#238a97", "#3ecad9", "#7fe0e8", "#c9f4f7"] },
+      "pressure": { "role": "primary", "displayName": "Pressure Teal, deep", "canonical": "#0f4c56", "tonalRamp": ["#03080a", "#071d21", "#0f4c56", "#166b78", "#1f8b99", "#3ecad9", "#7fe0e8", "#c9f4f7"] },
+      "bullish": { "role": "secondary", "displayName": "All-Clear Teal-Green", "canonical": "#35d0a0", "tonalRamp": ["#031a13", "#0a3a2c", "#0f5a42", "#1c8a67", "#26ab80", "#35d0a0", "#7fe6c4", "#c9f5e3"] },
+      "bearish": { "role": "secondary", "displayName": "Warning Red-Orange", "canonical": "#f2543d", "tonalRamp": ["#210805", "#4a140d", "#7a2216", "#a8331f", "#d1432a", "#f2543d", "#f79483", "#fcd4cb"] },
+      "hawkish": { "role": "secondary", "displayName": "Advisory Amber", "canonical": "#e0a83e", "tonalRamp": ["#241a05", "#4a350c", "#6f5013", "#966d1e", "#bd8a2c", "#e0a83e", "#f0c980", "#faeac0"] },
+      "dovish": { "role": "secondary", "displayName": "Dovish Teal", "canonical": "#38b6d6", "tonalRamp": ["#04171d", "#0a2e38", "#0f4753", "#166375", "#1f8298", "#38b6d6", "#82d3e6", "#c9edf5"] },
+      "severe": { "role": "tertiary", "displayName": "Reserved Crimson", "canonical": "#c81e3a", "tonalRamp": ["#200308", "#420715", "#671023", "#8c1830", "#af1f38", "#c81e3a", "#e26a7f", "#f5c1cb"] },
+      "bg": { "role": "neutral", "displayName": "Storm Ground", "canonical": "#0a0f16", "tonalRamp": ["#0a0f16", "#10161f", "#161e29", "#1b2430", "#232e3b", "#33404f", "#8b98a8", "#e9eef3"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Space Grotesk", "purpose": "Page/section headings and primary buttons. No eyebrow/kicker ever precedes it." },
+      "mono": { "displayName": "Space Mono", "purpose": "Every instrument readout, advisory bulletin body, tables, tags, nav tabs — teletype-bulletin heritage, tabular numerals." },
+      "body": { "displayName": "Plus Jakarta Sans", "purpose": "UI/body prose only; deliberately unobtrusive against the display + mono pairing." }
+    },
+    "shadows": [
+      { "name": "rail-glow", "value": "inset 0 -1px 0 0 color-mix(in srgb, var(--pressure) 40%, transparent)", "purpose": "Sticky instrument rail bottom edge, ties nav to the structural accent." },
+      { "name": "toast-lift", "value": "0 -8px 24px -8px rgba(0,0,0,0.5)", "purpose": "Separates the bottom-pinned level-up toast strip from page content." }
+    ],
+    "motion": [
+      { "name": "digit-roll", "value": "translateY(35%)->translateY(0), opacity 0->1, 260ms cubic-bezier(0.16,1,0.3,1)", "purpose": "Remount animation for any instrument readout (PressureGauge %) when its value refreshes; respects prefers-reduced-motion. Mechanically verified via computed-style probe; not yet visually confirmed in a screenshot (260ms transition)." },
+      { "name": "toast-slide", "value": "opacity/transform 320ms cubic-bezier(0.16,1,0.3,1)", "purpose": "LevelUpToast slide-in/out from the bottom viewport edge." },
+      { "name": "gauge-fill", "value": "stroke-dasharray 400ms cubic-bezier(0.16,1,0.3,1)", "purpose": "PressureGauge arc fill transition on value change." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "560px" },
+      { "name": "tablet", "value": "900px" },
+      { "name": "nav-wrap", "value": "720px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Pressure-teal filled action button, Space Grotesk display type.",
+      "html": "<button class=\"ds-btn-primary\">Ask the Forecaster</button>",
+      "css": ".ds-btn-primary { background: #3ecad9; color: #04141a; border: none; border-radius: 6px; padding: 11px 18px; font-weight: 700; font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: transform 120ms ease, filter 120ms ease; } .ds-btn-primary:hover { filter: brightness(1.08); } .ds-btn-primary:focus-visible { outline: 2px solid #3ecad9; outline-offset: 2px; } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }"
+    },
+    {
+      "name": "Advisory Tag — Bullish",
+      "kind": "chip",
+      "refersTo": "tag-bullish",
+      "description": "Severity-language pill for bullish bias; never compresses, wraps as a whole chip.",
+      "html": "<span class=\"ds-tag ds-tag-bullish\">Bias: Bullish</span>",
+      "css": ".ds-tag { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 600; font-family: 'Space Mono', ui-monospace, monospace; border: 1px solid #232e3b; background: #161e29; white-space: nowrap; letter-spacing: 0.01em; flex-shrink: 0; } .ds-tag-bullish { color: #35d0a0; border-color: rgba(53,208,160,0.35); background: rgba(53,208,160,0.10); }"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Base surface unit: dark panel background, hairline border, no shadow.",
+      "html": "<div class=\"ds-panel\"><h3>Certified Forecaster</h3><p class=\"ds-panel-sub\">XP 210 / 500</p></div>",
+      "css": ".ds-panel { background: #10161f; border: 1px solid #232e3b; border-radius: 10px; padding: 20px 22px; min-width: 0; } .ds-panel h3 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; margin: 0 0 6px; color: #e9eef3; } .ds-panel-sub { font-family: 'Space Mono', monospace; font-size: 13px; color: #8b98a8; margin: 0; }"
+    },
+    {
+      "name": "Instrument Rail (Nav)",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Sticky top nav with SVG compass-rose wordmark, mono tabs, active-state tint.",
+      "html": "<div class=\"ds-rail\"><div class=\"ds-rail-inner\"><span class=\"ds-wordmark\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\"><circle cx=\"12\" cy=\"12\" r=\"9\" stroke=\"#3ecad9\" stroke-width=\"1.4\"/><path d=\"M12 4.5 13.6 10.4 19.5 12 13.6 13.6 12 19.5 10.4 13.6 4.5 12 10.4 10.4Z\" stroke=\"#3ecad9\" stroke-width=\"1.2\" stroke-linejoin=\"round\"/><circle cx=\"12\" cy=\"12\" r=\"1.3\" fill=\"#3ecad9\"/></svg>WealthAI</span><nav class=\"ds-tabs\"><a class=\"ds-tab ds-tab-active\" href=\"#\">Situation Board</a><a class=\"ds-tab\" href=\"#\">Advisories</a></nav></div></div>",
+      "css": ".ds-rail { position: sticky; top: 0; background: rgba(16,22,31,0.92); backdrop-filter: blur(10px); border-bottom: 1px solid #232e3b; box-shadow: inset 0 -1px 0 0 rgba(15,76,86,0.4); } .ds-rail-inner { display: flex; align-items: center; gap: 28px; padding: 14px 20px; } .ds-wordmark { display: flex; align-items: center; gap: 9px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; color: #e9eef3; } .ds-tabs { display: flex; gap: 4px; } .ds-tab { font-family: 'Space Mono', monospace; font-size: 12px; color: #8b98a8; padding: 7px 12px; border-radius: 6px; border: 1px solid transparent; } .ds-tab:hover { color: #e9eef3; background: #161e29; } .ds-tab-active { color: #3ecad9; border-color: rgba(62,202,217,0.3); background: rgba(62,202,217,0.08); }"
+    },
+    {
+      "name": "PressureGauge",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "270-degree instrument dial reading a 0-100 confidence/probability value, with digit-roll on refresh.",
+      "html": "<div class=\"ds-gauge\"><svg width=\"92\" height=\"92\" viewBox=\"0 0 92 92\" style=\"transform: rotate(135deg)\"><circle cx=\"46\" cy=\"46\" r=\"37.7\" fill=\"none\" stroke=\"#161e29\" stroke-width=\"8.3\" stroke-linecap=\"round\" stroke-dasharray=\"177.7 59.2\"/><circle cx=\"46\" cy=\"46\" r=\"37.7\" fill=\"none\" stroke=\"#35d0a0\" stroke-width=\"8.3\" stroke-linecap=\"round\" stroke-dasharray=\"124 112.9\"/></svg><span class=\"ds-gauge-value\">70%</span><span class=\"ds-gauge-label\">BULLISH</span></div>",
+      "css": ".ds-gauge { display: flex; flex-direction: column; align-items: center; gap: 6px; } .ds-gauge-value { margin-top: -57px; font-family: 'Space Mono', monospace; font-size: 22px; font-weight: 700; color: #35d0a0; display: block; animation: ds-digit-roll 260ms cubic-bezier(0.16,1,0.3,1); } .ds-gauge-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: #8b98a8; margin-top: -2px; } @keyframes ds-digit-roll { from { transform: translateY(35%); opacity: 0; } to { transform: translateY(0); opacity: 1; } } @media (prefers-reduced-motion: reduce) { .ds-gauge-value { animation: none; } }"
+    },
+    {
+      "name": "Advisory Bulletin (Synthetic Data Banner)",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Stamped-tag disclosure pattern for demo/heuristic data; not a colored border alert.",
+      "html": "<div class=\"ds-bulletin\"><span class=\"ds-bulletin-stamp\">SYNTHETIC</span><span class=\"ds-bulletin-body\">Economic calendar is currently seeded/demo data, not a live feed.</span></div>",
+      "css": ".ds-bulletin { background: #10161f; border: 1px solid #232e3b; border-radius: 10px; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; } .ds-bulletin-stamp { flex-shrink: 0; font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; padding: 3px 9px; border-radius: 6px; border: 1px solid rgba(200,30,58,0.5); color: #c81e3a; background: rgba(200,30,58,0.12); white-space: nowrap; } .ds-bulletin-body { font-family: 'Space Mono', monospace; font-size: 13px; line-height: 1.6; color: #8b98a8; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Storm Warning Desk",
+    "overview": "WealthAI reads the market like a forecast-center meteorologist reads the atmosphere: every asset is a tracked system, every economic release is an advisory, and confidence is expressed as a forecast-cone width or an instrument-dial reading, never a bare percentage sitting alone. The world is a deep storm-slate situation board — cold blue-grey near-black, not a navy-purple \"dark fintech\" default — lit by one saturated pressure-teal that functions as the desk's own structural accent (rails, borders, active state, chart lines), not a decorative sprinkle. This was a deliberate refusal of the category-default trading-dashboard skin: WealthAI's positioning is showing its reasoning chain and never overstating certainty, and the visual world materializes that as an actual severity-tiered advisory language — bullish/bearish and hawkish/dovish read as weather-service colors (all-clear teal-green, warning red-orange, advisory amber, the pressure-teal family), with one reserved saturated crimson for the single most severe tier (shock-level geopolitical risk), rather than flat red/green.",
+    "keyCharacteristics": [
+      "Deep storm-slate ground with one dominant structural accent (pressure-teal), not a multi-accent palette.",
+      "Advisory-severity color language stands in for bullish/bearish/hawkish/dovish, with a single reserved crimson for the most severe tier only.",
+      "Space Grotesk (display) / Space Mono (data and bulletin body) / Plus Jakarta Sans (UI prose) — a three-role type stack, each role used for its heritage, not decoratively.",
+      "Real instrument components (forecast-cone SVG, 270-degree pressure-gauge dial, labeled trajectory sparklines) replace flat bars, bare percentages, and decorative charts.",
+      "No eyebrows/kickers, no colored-border alerts, no bare sparklines — each banned in favor of a load-bearing alternative."
+    ],
+    "rules": [
+      { "name": "The Severity-Not-Decoration Rule", "body": "Every functional color (bullish/bearish/hawkish/dovish/severe) maps to a specific product meaning and must never be reassigned to a purely decorative role. --severe renders only the single most severe tier.", "section": "colors" },
+      { "name": "The One Accent Rule", "body": "Pressure-teal is the only saturated non-functional accent. New UI reaches for the neutral/border scale before introducing a second decorative hue.", "section": "colors" },
+      { "name": "The Single-Size Bulletin Rule", "body": "Advisory bulletin body text never resizes for hierarchy — one size, ranked only by weight and case, matching real NOAA teletype bulletins.", "section": "typography" },
+      { "name": "The No-Kicker Rule", "body": "No eyebrow/kicker label ever sits above a page heading. Headings carry weight through h1-h3/.heading-block alone.", "section": "typography" },
+      { "name": "The Contained-Overflow Rule", "body": "Wide content never overflows the page horizontally; it scrolls inside its own explicitly-sized container, enforced at three layers (panel min-width:0, body overflow-x:hidden, .table-scroll opt-in).", "section": "layout" },
+      { "name": "The Layered-Not-Lifted Rule", "body": "Depth comes from stepped background tone (four steps: ground -> panel -> panel-alt -> raised) plus borders, not drop shadows.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep pressure-teal as the only saturated non-functional accent, carrying 40-50% of any surface via structural elements (borders, active states, chart lines), never as scattered decoration.",
+      "Do pair every sparkline/trend line with an explicit numeric label (delta + range), per MiniTrajectory.",
+      "Do route wide content (tables, wide charts) through a .table-scroll-style container with its own overflow-x: auto and an explicit min-width on the scrolling child.",
+      "Do keep short data tags white-space: nowrap + flex-shrink: 0; only long free-text chips override to wrap.",
+      "Do flag synthetic/heuristic data with the stamped bulletin pattern, at least as visibly as today, per PRODUCT.md's certainty constraints."
+    ],
+    "donts": [
+      "Don't place an eyebrow/kicker label above a page heading — the pattern was removed app-wide; headings carry their own weight.",
+      "Don't use a colored border-left/right as an alert or disclosure device — the stamped bulletin tag replaced that pattern; a colored side-border is not part of this system.",
+      "Don't reassign --severe (crimson) to ordinary bearish/warning states — it is reserved for the single most severe tier only.",
+      "Don't ship a bare sparkline with no accompanying numeric label — sparklines are data readouts here, not decoration.",
+      "Don't introduce a second decorative accent hue alongside pressure-teal; reach for the neutral/border scale first."
+    ]
+  }
+}

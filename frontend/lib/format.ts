@@ -27,3 +27,20 @@ export function formatNumber(value: number | null | undefined, digits = 2): stri
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
   return value.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: 0 });
 }
+
+/** A storm-category-style conviction tier derived from how far the score
+ * leans from neutral and how confident the underlying signals are --
+ * "WATCH" (worth monitoring, low conviction) through "WARNING" (strong,
+ * high-confidence lean), matching the advisory-bulletin severity language
+ * used across the app. */
+export function convictionTier(bullishPct: number, confidence: string): { label: string; tagClass: string } {
+  const distance = Math.abs(bullishPct - 50);
+  const bullish = bullishPct >= 50;
+  if (confidence === "High" && distance >= 20) {
+    return { label: "Warning", tagClass: bullish ? "tag-bullish" : "tag-bearish" };
+  }
+  if (confidence !== "Low" && distance >= 10) {
+    return { label: "Advisory", tagClass: "tag-warn" };
+  }
+  return { label: "Watch", tagClass: "tag-neutral" };
+}

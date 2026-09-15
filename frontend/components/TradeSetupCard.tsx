@@ -2,6 +2,7 @@
 
 import type { TradeSetup, TradeTarget } from "@/lib/types";
 import { formatNumber, formatPercent } from "@/lib/format";
+import PressureGauge from "./PressureGauge";
 
 function Level({ label, price, pct, color }: { label: string; price: number | null; pct: number | null; color?: string }) {
   return (
@@ -22,9 +23,9 @@ function Level({ label, price, pct, color }: { label: string; price: number | nu
 
 function TargetCard({ t, color }: { t: TradeTarget; color: string }) {
   return (
-    <div className="panel" style={{ padding: 12 }} title={t.note}>
+    <div className="panel" style={{ padding: 12, background: "var(--bg-panel-alt)" }} title={t.note}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <span className="text-dim text-sm" style={{ fontWeight: 600 }}>
+        <span className="text-dim text-sm mono" style={{ fontWeight: 700 }}>
           {t.label}
         </span>
         {t.r_multiple !== null && (
@@ -33,7 +34,7 @@ function TargetCard({ t, color }: { t: TradeTarget; color: string }) {
           </span>
         )}
       </div>
-      <div className="mono" style={{ fontWeight: 600, color, marginTop: 6 }}>
+      <div className="mono" style={{ fontWeight: 700, color, marginTop: 6, fontSize: 15 }}>
         {t.price !== null ? formatNumber(t.price) : t.pct_from_entry !== null ? `${t.pct_from_entry > 0 ? "+" : ""}${formatNumber(t.pct_from_entry, 2)}%` : "—"}
       </div>
       {t.price !== null && t.pct_from_entry !== null && (
@@ -58,9 +59,9 @@ export default function TradeSetupCard({ setup }: { setup: TradeSetup }) {
   if (setup.direction === "none") {
     return (
       <div className="panel">
-        <div className="section-title">Trade Setup</div>
-        <div className="text-sm text-dim">
-          No high-probability setup right now. {setup.reasoning}
+        <h2 style={{ fontSize: 18 }}>No Track Plotted</h2>
+        <div className="text-sm text-dim" style={{ marginTop: 6 }}>
+          {setup.reasoning}
         </div>
       </div>
     );
@@ -71,32 +72,29 @@ export default function TradeSetupCard({ setup }: { setup: TradeSetup }) {
 
   return (
     <div className="panel">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <div className="section-title" style={{ marginBottom: 0 }}>
-          Trade Setup
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+        <div>
+          <h2 style={{ fontSize: 18 }}>Plotted Track</h2>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+            <span className={`tag ${isLong ? "tag-bullish" : "tag-bearish"}`}>Bias: {isLong ? "Bullish" : "Bearish"}</span>
+            <span className="tag">{setup.confidence} confidence</span>
+            {setup.setup_type && <span className="tag tag-neutral">{setup.setup_type.replace(/_/g, " ")}</span>}
+            <span className="tag" title={setup.timeframe_note}>
+              {setup.timeframe}
+            </span>
+            {setup.risk_reward !== null && <span className="tag">R:R {formatNumber(setup.risk_reward, 1)}:1 (TP2)</span>}
+          </div>
         </div>
-        <span className={`tag ${isLong ? "tag-bullish" : "tag-bearish"}`}>
-          {setup.direction.toUpperCase()} · {formatPercent(setup.probability, 0)} probability
-        </span>
+        <PressureGauge value={setup.probability} color={color} label="probability" size={72} />
       </div>
 
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: "12px 0" }}>
-        <span className={`tag ${isLong ? "tag-bullish" : "tag-bearish"}`}>Bias: {isLong ? "Bullish" : "Bearish"}</span>
-        <span className="tag">{setup.confidence} confidence</span>
-        {setup.setup_type && <span className="tag tag-neutral">{setup.setup_type.replace(/_/g, " ")}</span>}
-        <span className="tag" title={setup.timeframe_note}>
-          {setup.timeframe}
-        </span>
-        {setup.risk_reward !== null && <span className="tag">R:R {formatNumber(setup.risk_reward, 1)}:1 (TP2)</span>}
-      </div>
-
-      <div className="grid grid-cols-4" style={{ marginBottom: 12 }}>
+      <div className="grid grid-cols-4" style={{ margin: "18px 0 12px" }}>
         <Level label="Entry" price={setup.entry_price} pct={setup.entry_pct_from_last} />
         <Level label="Stop (SL / invalidation)" price={setup.stop_price} pct={setup.stop_pct_from_entry} color="var(--bearish)" />
       </div>
 
       <div className="text-dim text-sm" style={{ marginBottom: 8 }}>
-        Targets (scale out: take partial profit at each level)
+        Targets — scale out, take partial profit at each level
       </div>
       <div className="grid grid-cols-4" style={{ marginBottom: 16 }}>
         {setup.targets.map((t) => (

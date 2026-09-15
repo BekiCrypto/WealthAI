@@ -20,10 +20,10 @@ export default function EventsPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
-        <h1 style={{ fontSize: 22 }}>Economic Calendar</h1>
+        <h1 style={{ fontSize: 26 }}>Advisory Schedule</h1>
         <p className="text-dim text-sm">
-          Click a row to see the AI&apos;s pre-release scenario analysis: likely range, surprise probabilities, and
-          expected asset reaction under each outcome.
+          Open an advisory to see its forecast contour: likely range, surprise probabilities, and
+          expected system reaction under each outcome.
         </p>
       </div>
       {error && <div style={{ color: "var(--bearish)" }}>{error}</div>}
@@ -35,7 +35,7 @@ export default function EventsPage() {
         </SyntheticDataBanner>
       )}
       {events && (
-        <div className="panel" style={{ padding: 0 }}>
+        <div className="panel table-scroll" style={{ padding: 0 }}>
           <EventTable events={events} />
         </div>
       )}

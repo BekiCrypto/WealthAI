@@ -15,6 +15,7 @@ export default function DashboardPage() {
   const [worldState, setWorldState] = useState<WorldState | null>(null);
   const [events, setEvents] = useState<EconomicEvent[]>([]);
   const [setups, setSetups] = useState<TradeSetup[]>([]);
+  const [trajectories, setTrajectories] = useState<Record<string, number[]>>({});
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,7 +34,24 @@ export default function DashboardPage() {
       }
     }
 
+    async function loadTrajectories() {
+      try {
+        const history = await api.worldStateHistory(50);
+        if (cancelled) return;
+        const series: Record<string, number[]> = {};
+        for (const snapshot of history) {
+          for (const [symbol, score] of Object.entries(snapshot.scores)) {
+            (series[symbol] ??= []).push(score.bullish_pct);
+          }
+        }
+        setTrajectories(series);
+      } catch {
+        // trajectories are a supplementary visual -- fail silently and let cards render without one
+      }
+    }
+
     load();
+    loadTrajectories();
     const id = setInterval(load, REFRESH_MS);
     return () => {
       cancelled = true;
@@ -56,14 +74,16 @@ export default function DashboardPage() {
   const scores = Object.values(worldState.scores);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
       <WorldStatePanel regime={worldState.regime} reasoning={worldState.reasoning} />
 
       <div>
-        <div className="section-title">Intelligence Scores</div>
+        <div className="heading-block">
+          <h2>Tracked Systems</h2>
+        </div>
         <div className="grid grid-cols-4">
           {scores.map((score) => (
-            <IntelligenceScoreCard key={score.symbol} score={score} />
+            <IntelligenceScoreCard key={score.symbol} score={score} trajectory={trajectories[score.symbol]} />
           ))}
           {scores.length === 0 && (
             <div className="text-dim text-sm">No price data yet — the ingestion scheduler is still warming up.</div>
@@ -74,13 +94,13 @@ export default function DashboardPage() {
       <TradeSetupsSummary setups={setups} />
 
       <div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <div className="section-title">Upcoming Events</div>
-          <Link href="/events" className="text-sm" style={{ color: "var(--accent)" }}>
-            Full calendar →
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }} className="heading-block">
+          <h2>Active Advisories</h2>
+          <Link href="/events" className="text-sm" style={{ color: "var(--pressure-bright)" }}>
+            Full schedule →
           </Link>
         </div>
-        <div className="panel" style={{ padding: 0 }}>
+        <div className="panel table-scroll" style={{ padding: 0 }}>
           <table>
             <thead>
               <tr>
