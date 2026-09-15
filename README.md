@@ -56,6 +56,7 @@ Each spec step maps to a concrete module:
 | 5. React after release | `prediction_engine.py::record_post_release_reaction` |
 | 6. Technical analysis fused with macro | `app/services/analysis/technical.py` + `intelligence_score.py` |
 | 7. Intelligence Score with reasons | `intelligence_score.py`, `/api/assets/{symbol}/score` |
+| 7b. Highest-probability entry/exit signal | `app/services/analysis/trade_setup.py`, `/api/assets/{symbol}/setup` |
 | 8. Live World State | `macro_brain.py::classify_world_state`, `WorldStateSnapshot` |
 | 9. Ask the AI | `app/services/llm/assistant.py`, `/api/chat` |
 | 10. Learn from every prediction | `Prediction` / `PredictionOutcome` models, `calibration_stats` |
@@ -70,6 +71,23 @@ the dovish outcome) that retail tools commonly get backwards. It's exposed
 as a standalone library at `/learn`, embedded inline on every event's
 scenario detail, and fed into the chat assistant's context so its answers
 explain the mechanism, not just the call.
+
+**Also beyond the spec: a concrete entry/exit signal, not just a score.**
+`app/services/analysis/trade_setup.py` turns the Intelligence Score into an
+actual entry, stop (invalidation), and target: direction and conviction come
+from the score (macro + technical + sentiment + geopolitical), but the
+levels come from pure price structure (trend, RSI, support/resistance,
+ATR), since a macro view alone doesn't tell you where to place a stop. It
+deliberately returns "no setup" -- rather than manufacturing one -- when the
+score is too close to neutral, confidence is Low, or the mechanical
+stop/target math produces a risk/reward below 1.2:1 (a trade you wouldn't
+actually take). Every generated setup with a real direction is logged as a
+`Prediction` every 6 hours (`job_log_trade_setups` in `scheduler.py`), so
+the calibration loop in spec step 10 -- previously only reachable by hand
+via `POST /predictions` -- now actually accumulates data on its own. Same
+licensing gate as everywhere else: non-redistributable symbols get the
+setup's structure (percentage distances, risk/reward) with the absolute
+entry/stop/target prices withheld.
 
 ## Getting started
 
@@ -128,7 +146,7 @@ resistance) with synthetic price series — no network or DB required.
 All endpoints are under `/api` (see `/docs` for full schemas):
 
 - `GET /world-state` — current regime + all intelligence scores + reasoning
-- `GET /assets/{symbol}/score` / `/technical` / `/prices`
+- `GET /assets/{symbol}/score` / `/technical` / `/setup` / `/prices`; `GET /assets/setups` for all tracked symbols
 - `GET /events/calendar`, `GET /events/{id}/scenario`, `GET /events/{id}/reaction`
 - `GET /predictions`, `POST /predictions`, `GET /predictions/calibration`
 - `GET /news/latest`

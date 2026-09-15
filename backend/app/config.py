@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     geopolitical_interval: int = 900
     economic_calendar_interval: int = 3600
     world_state_interval: int = 300
+    trade_setup_log_interval: int = 21600  # 6h: how often each symbol's setup is logged as a tracked Prediction
 
     # Tracked universe
     tracked_symbols: List[str] = [

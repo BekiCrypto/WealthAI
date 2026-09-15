@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { api, SYMBOL_LABELS } from "@/lib/api";
-import type { ScoreBreakdown, TechnicalSnapshot } from "@/lib/types";
+import type { ScoreBreakdown, TechnicalSnapshot, TradeSetup } from "@/lib/types";
 import { directionClass, formatNumber } from "@/lib/format";
 import TradingViewWidget from "@/components/TradingViewWidget";
+import TradeSetupCard from "@/components/TradeSetupCard";
 
 export default function AssetDetailPage() {
   const params = useParams<{ symbol: string }>();
@@ -13,16 +14,18 @@ export default function AssetDetailPage() {
 
   const [score, setScore] = useState<ScoreBreakdown | null>(null);
   const [technical, setTechnical] = useState<TechnicalSnapshot | null>(null);
+  const [setup, setSetup] = useState<TradeSetup | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
-        const [s, t] = await Promise.all([api.assetScore(symbol), api.assetTechnical(symbol)]);
+        const [s, t, ts] = await Promise.all([api.assetScore(symbol), api.assetTechnical(symbol), api.assetSetup(symbol)]);
         if (cancelled) return;
         setScore(s);
         setTechnical(t);
+        setSetup(ts);
         setError(null);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load asset data");
@@ -48,6 +51,8 @@ export default function AssetDetailPage() {
       <TradingViewWidget symbol={symbol} />
 
       {error && <div style={{ color: "var(--bearish)" }}>{error}</div>}
+
+      {setup && <TradeSetupCard setup={setup} />}
 
       {technical && (
         <div className="panel">

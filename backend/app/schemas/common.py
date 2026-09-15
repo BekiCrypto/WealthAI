@@ -100,6 +100,34 @@ class PredictionOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class TradeSetup(BaseModel):
+    """A concrete entry/stop/target derived from the Intelligence Score and
+    price structure -- spec step 9's "highest-probability setup," not just
+    an abstract bullish/bearish call. `entry_price`/`stop_price`/
+    `target_price` are withheld (null) for non-redistributable symbols, same
+    as TechnicalSnapshot; the `_pct_from_*` ratio fields are our own derived
+    output and are always shown regardless of licensing.
+    """
+
+    symbol: str
+    redistributable: bool = True
+    price_disclosure: str | None = None
+    direction: str  # long, short, none
+    setup_type: str | None
+    confidence: str
+    probability: float
+    entry_price: float | None
+    stop_price: float | None
+    target_price: float | None
+    risk_reward: float | None
+    entry_pct_from_last: float | None
+    stop_pct_from_entry: float | None
+    target_pct_from_entry: float | None
+    reasoning: str
+    invalidation: str
+    main_risk: str
+
+
 class ChatRequest(BaseModel):
     query: str
 

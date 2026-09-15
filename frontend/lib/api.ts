@@ -6,6 +6,7 @@ import type {
   PriceBar,
   ScoreBreakdown,
   TechnicalSnapshot,
+  TradeSetup,
   WorldState,
 } from "./types";
 
@@ -38,6 +39,8 @@ export const api = {
   assetScores: () => apiGet<Record<string, ScoreBreakdown>>("/assets/scores"),
   assetScore: (symbol: string) => apiGet<ScoreBreakdown>(`/assets/${encodeURIComponent(symbol)}/score`),
   assetTechnical: (symbol: string) => apiGet<TechnicalSnapshot>(`/assets/${encodeURIComponent(symbol)}/technical`),
+  assetSetup: (symbol: string) => apiGet<TradeSetup>(`/assets/${encodeURIComponent(symbol)}/setup`),
+  assetSetups: () => apiGet<TradeSetup[]>("/assets/setups"),
   assetPrices: (symbol: string, limit = 300) =>
     apiGet<PriceBar[]>(`/assets/${encodeURIComponent(symbol)}/prices?limit=${limit}`),
   newsLatest: (limit = 30) => apiGet<NewsItem[]>(`/news/latest?limit=${limit}`),

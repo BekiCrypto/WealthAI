@@ -10,25 +10,35 @@ import json
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.services.analysis.intelligence_score import compute_all_scores
+from app.schemas.common import TradeSetup
+from app.services.analysis import technical
+from app.services.analysis.intelligence_score import compute_all_scores, compute_intelligence_score
 from app.services.analysis.macro_brain import classify_world_state
+from app.services.analysis.trade_setup import generate_trade_setup
 from app.services.education.glossary import get_education
 from app.services.ingestion.economic_calendar import upcoming_events
+from app.services.ingestion.market_data import price_history
 from app.services.ingestion.news_feed import latest_news
+from app.services.ingestion.providers import gate_trade_setup
 
 SYSTEM_PROMPT = """You are the WealthAI Market Intelligence assistant. You are given a live \
-snapshot of the world state (macro regime), per-asset intelligence scores, upcoming economic \
-events (each with an educational briefing on what the indicator is and how to read it), and \
-recent headlines. Answer the user's question using ONLY this context plus your general \
-financial knowledge for explanation -- do not invent live prices, data prints, or news you were \
-not given. Structure answers around: what happened -> why it matters -> what the market expects \
--> what might happen next -> your confidence -> what would prove you wrong. This app is \
-explicitly educational: don't just hand over a bullish/bearish call -- teach the reader the \
-underlying mechanism (e.g. how a surprise in this indicator transmits through rates, currency \
-and risk appetite to reach the asset in question), and flag when an indicator is "inverted" \
-(a higher print is the dovish/bearish-for-hawks outcome, like the unemployment rate) since that \
-is a common source of retail mistakes. Keep answers concise and concrete. Never give this as \
-individual financial advice; frame everything as probabilistic intelligence, not certainty."""
+snapshot of the world state (macro regime), per-asset intelligence scores, trade setups (entry/ \
+stop/target derived from each score, when one exists), upcoming economic events (each with an \
+educational briefing on what the indicator is and how to read it), and recent headlines. Answer \
+the user's question using ONLY this context plus your general financial knowledge for \
+explanation -- do not invent live prices, data prints, or news you were not given. Structure \
+answers around: what happened -> why it matters -> what the market expects -> what might happen \
+next -> your confidence -> what would prove you wrong. If asked for a "setup" or "trade," use \
+the trade_setups context: if a symbol's entry is null it means its provider isn't licensed for \
+public redistribution -- use the percentage fields (entry_pct_from_last etc.) and risk_reward \
+instead of ever inventing an absolute price. If a symbol's direction is "none," say plainly that \
+there is no high-probability setup right now rather than manufacturing one. This app is \
+explicitly educational: don't just hand over a call -- teach the reader the underlying mechanism \
+(e.g. how a surprise in an indicator transmits through rates, currency and risk appetite to \
+reach the asset in question), and flag when an indicator is "inverted" (a higher print is the \
+dovish/bearish-for-hawks outcome, like the unemployment rate) since that is a common source of \
+retail mistakes. Keep answers concise and concrete. Never give this as individual financial \
+advice; frame everything as probabilistic intelligence, not certainty."""
 
 
 def build_context(db: Session) -> dict:
@@ -57,7 +67,24 @@ def build_context(db: Session) -> dict:
         {"source": n.source, "title": n.title, "published_at": n.published_at.isoformat(), "sentiment": n.sentiment}
         for n in latest_news(db, limit=20)
     ]
-    return {"world_state": world, "intelligence_scores": scores, "upcoming_events": events, "recent_news": news}
+
+    trade_setups = {}
+    for symbol in settings.tracked_symbols:
+        bars = price_history(db, symbol, limit=300)
+        snapshot = technical.compute_snapshot(symbol, bars)
+        score = compute_intelligence_score(db, symbol)
+        if snapshot is None or score is None:
+            continue
+        gated = gate_trade_setup(TradeSetup(**generate_trade_setup(symbol, score, snapshot)))
+        trade_setups[symbol] = gated.model_dump()
+
+    return {
+        "world_state": world,
+        "intelligence_scores": scores,
+        "trade_setups": trade_setups,
+        "upcoming_events": events,
+        "recent_news": news,
+    }
 
 
 def _fallback_answer(query: str, context: dict) -> str:
@@ -72,6 +99,14 @@ def _fallback_answer(query: str, context: dict) -> str:
             f"{sym} {s['bullish_pct']}% bullish ({s['confidence']} confidence)"
             for sym, s in context["intelligence_scores"].items()
         ))
+    active_setups = {sym: s for sym, s in context["trade_setups"].items() if s["direction"] != "none"}
+    if active_setups:
+        lines.append("Active trade setups: " + ", ".join(
+            f"{sym} {s['direction']} ({s['probability']}% probability, R:R {s['risk_reward']})"
+            for sym, s in active_setups.items()
+        ))
+    else:
+        lines.append("No high-probability trade setups across the tracked universe right now.")
     if context["upcoming_events"]:
         next_event = context["upcoming_events"][0]
         lines.append(

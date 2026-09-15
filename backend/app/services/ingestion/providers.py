@@ -81,3 +81,36 @@ def gate_technical_snapshot(snapshot):
             **{field: None for field in PRICE_SCALE_FIELDS},
         }
     )
+
+
+TRADE_SETUP_PRICE_FIELDS = ("entry_price", "stop_price", "target_price")
+
+
+def gate_trade_setup(setup):
+    """Same principle as gate_technical_snapshot, applied to a trade setup:
+    withholds absolute entry/stop/target prices for a non-redistributable
+    symbol (they'd amount to redistributing the underlying price via a thin
+    derived veneer), but keeps every ratio -- the percentage distances and
+    risk/reward -- since those are genuinely our own computed structure and
+    don't require knowing the provider's raw number to be useful.
+    """
+    provider = provider_for_symbol(setup.symbol)
+    if provider.redistributable:
+        return setup.model_copy(update={"redistributable": True})
+
+    if setup.direction == "none":
+        # Nothing to withhold -- there's no setup, so don't imply one was hidden.
+        return setup.model_copy(update={"redistributable": False})
+
+    return setup.model_copy(
+        update={
+            "redistributable": False,
+            "price_disclosure": (
+                f"Exact entry/stop/target prices withheld: {setup.symbol}'s data comes from "
+                f"{provider.name}, whose free tier isn't licensed for public redistribution. The "
+                "percentage distances and risk/reward ratio below are our own derived structure "
+                "and are shown in full."
+            ),
+            **{field: None for field in TRADE_SETUP_PRICE_FIELDS},
+        }
+    )

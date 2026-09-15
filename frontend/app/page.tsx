@@ -3,16 +3,18 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import type { EconomicEvent, WorldState } from "@/lib/types";
+import type { EconomicEvent, TradeSetup, WorldState } from "@/lib/types";
 import WorldStatePanel from "@/components/WorldStatePanel";
 import IntelligenceScoreCard from "@/components/IntelligenceScoreCard";
 import EventCountdown from "@/components/EventCountdown";
+import TradeSetupsSummary from "@/components/TradeSetupsSummary";
 
 const REFRESH_MS = 60_000;
 
 export default function DashboardPage() {
   const [worldState, setWorldState] = useState<WorldState | null>(null);
   const [events, setEvents] = useState<EconomicEvent[]>([]);
+  const [setups, setSetups] = useState<TradeSetup[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -20,10 +22,11 @@ export default function DashboardPage() {
 
     async function load() {
       try {
-        const [ws, cal] = await Promise.all([api.worldState(), api.calendar()]);
+        const [ws, cal, ts] = await Promise.all([api.worldState(), api.calendar(), api.assetSetups()]);
         if (cancelled) return;
         setWorldState(ws);
         setEvents(cal.slice(0, 5));
+        setSetups(ts);
         setError(null);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load live data");
@@ -67,6 +70,8 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      <TradeSetupsSummary setups={setups} />
 
       <div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
