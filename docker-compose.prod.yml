@@ -1,0 +1,38 @@
+# Production compose for a shared box that already runs a reverse proxy
+# (Caddy) on an existing external Docker network. This file intentionally
+# publishes NO host ports -- the proxy reaches these containers by name over
+# `proxy_net`, exactly like every other service already on that network.
+# SQLite (not Postgres) on purpose: no dedicated DB container to keep the
+# footprint small on constrained disk; data persists in the wealthai_data
+# volume.
+services:
+  backend:
+    build: ./backend
+    container_name: wealthai-backend
+    env_file:
+      - ./backend/.env
+    volumes:
+      - wealthai_data:/app/data
+    networks:
+      - proxy_net
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-https://tradesapi.trustlotto.app/api}
+    container_name: wealthai-frontend
+    depends_on:
+      - backend
+    networks:
+      - proxy_net
+    restart: unless-stopped
+
+networks:
+  proxy_net:
+    external: true
+    name: ${PROXY_NETWORK:-trustlotto_default}
+
+volumes:
+  wealthai_data:
