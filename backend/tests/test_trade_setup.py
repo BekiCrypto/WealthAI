@@ -19,14 +19,25 @@ def make_snapshot(trend="uptrend", rsi=55.0, last_price=100.0, atr=2.0, support=
     )
 
 
-def test_uptrend_continuation_is_long_with_target_at_resistance():
+def target(setup, label):
+    return next(t for t in setup["targets"] if t["label"] == label)
+
+
+def test_uptrend_continuation_is_long_with_staged_targets():
     setup = generate_trade_setup("TEST", make_score(), make_snapshot())
     assert setup["direction"] == "long"
     assert setup["setup_type"] == "trend_continuation"
     assert setup["entry_price"] == 100.0
-    assert setup["target_price"] == 110.0  # resistance, since it's above entry
     assert setup["stop_price"] < setup["entry_price"]
-    assert setup["risk_reward"] > 0
+    assert [t["label"] for t in setup["targets"]] == ["TP1", "TP2", "TP3"]
+
+    tp1, tp2, tp3 = target(setup, "TP1"), target(setup, "TP2"), target(setup, "TP3")
+    # Staged targets must be strictly increasing for a long, and each further
+    # out than the last -- otherwise "scale out" doesn't mean anything.
+    assert setup["entry_price"] < tp1["price"] < tp2["price"] < tp3["price"]
+    assert tp1["r_multiple"] == 1.0  # TP1 is defined as exactly 1R
+    assert tp2["price"] == 110.0  # resistance, since it's above entry
+    assert setup["risk_reward"] == tp2["r_multiple"]  # headline R:R is TP2's
 
 
 def test_overbought_uptrend_waits_for_pullback_instead_of_chasing():
@@ -36,7 +47,7 @@ def test_overbought_uptrend_waits_for_pullback_instead_of_chasing():
     assert setup["entry_price"] == 98.0  # sma_20, not the current (overbought) price
 
 
-def test_downtrend_bearish_score_is_short_continuation():
+def test_downtrend_bearish_score_is_short_with_staged_targets():
     score = make_score(bullish_pct=25.0, macro="bearish", technical="bearish", geopolitical="neutral")
     # A tighter resistance (closer stop) and farther support (bigger target) than the shared
     # long-side fixture, so this short has a favorable risk/reward and isn't filtered out.
@@ -46,7 +57,11 @@ def test_downtrend_bearish_score_is_short_continuation():
     assert setup["direction"] == "short"
     assert setup["setup_type"] == "trend_continuation"
     assert setup["stop_price"] > setup["entry_price"]
-    assert setup["target_price"] == 90.0  # support, below entry
+
+    tp1, tp2, tp3 = target(setup, "TP1"), target(setup, "TP2"), target(setup, "TP3")
+    # Staged targets must be strictly decreasing for a short.
+    assert setup["entry_price"] > tp1["price"] > tp2["price"] > tp3["price"]
+    assert tp2["price"] == 90.0  # support, below entry
     assert setup["risk_reward"] >= 1.2
 
 
@@ -69,6 +84,7 @@ def test_low_confidence_score_yields_no_setup():
     setup = generate_trade_setup("TEST", make_score(confidence="Low"), make_snapshot())
     assert setup["direction"] == "none"
     assert setup["entry_price"] is None
+    assert setup["targets"] == []
 
 
 def test_neutral_score_yields_no_setup():
@@ -78,9 +94,9 @@ def test_neutral_score_yields_no_setup():
 
 def test_poor_risk_reward_is_suppressed_rather_than_shown():
     # Entry via SMA20 pullback, but resistance/support are positioned so the
-    # mechanical stop/target math produces risk_reward well under 1:1 -- a
-    # real trader wouldn't take this, so the engine should say "no setup"
-    # rather than dress up an unfavorable trade as a signal.
+    # mechanical stop/TP2 math produces risk_reward well under 1:1 -- a real
+    # trader wouldn't take this, so the engine should say "no setup" rather
+    # than dress up an unfavorable trade as a signal.
     setup = generate_trade_setup(
         "TEST", make_score(), make_snapshot(rsi=78.0, support=80.0, resistance=99.0, sma_20=98.0)
     )
@@ -102,16 +118,30 @@ def test_main_risk_names_the_opposing_component():
     assert "still bearish" in setup["main_risk"]
 
 
+def test_timeframe_is_always_stated():
+    setup = generate_trade_setup("TEST", make_score(), make_snapshot())
+    assert setup["timeframe"] == "Swing (daily chart)"
+    assert "daily" in setup["timeframe_note"].lower()
+    # Even a "none" setup states the timeframe, since it's a property of the
+    # engine (daily bars), not of whether a directional call was made.
+    none_setup = generate_trade_setup("TEST", make_score(confidence="Low"), make_snapshot())
+    assert none_setup["timeframe"] == "Swing (daily chart)"
+
+
 def test_gate_withholds_prices_for_non_redistributable_symbol():
     setup = generate_trade_setup("GC=F", make_score(), make_snapshot())
     gated = gate_trade_setup(TradeSetup(**setup))
     assert gated.redistributable is False
     assert gated.entry_price is None
     assert gated.stop_price is None
-    assert gated.target_price is None
     assert gated.entry_pct_from_last is not None  # ratios survive the gate
     assert gated.risk_reward is not None
     assert gated.price_disclosure is not None
+    assert len(gated.targets) == 3
+    for t in gated.targets:
+        assert t.price is None  # each staged target's absolute price is withheld too
+        assert t.pct_from_entry is not None
+        assert t.r_multiple is not None
 
 
 def test_gate_passes_through_redistributable_symbol_untouched():
@@ -120,3 +150,4 @@ def test_gate_passes_through_redistributable_symbol_untouched():
     assert gated.redistributable is True
     assert gated.entry_price == setup["entry_price"]
     assert gated.price_disclosure is None
+    assert gated.targets[1].price == setup["targets"][1]["price"]

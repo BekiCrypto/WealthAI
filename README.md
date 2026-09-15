@@ -73,15 +73,19 @@ scenario detail, and fed into the chat assistant's context so its answers
 explain the mechanism, not just the call.
 
 **Also beyond the spec: a concrete entry/exit signal, not just a score.**
-`app/services/analysis/trade_setup.py` turns the Intelligence Score into an
-actual entry, stop (invalidation), and target: direction and conviction come
-from the score (macro + technical + sentiment + geopolitical), but the
-levels come from pure price structure (trend, RSI, support/resistance,
-ATR), since a macro view alone doesn't tell you where to place a stop. It
-deliberately returns "no setup" -- rather than manufacturing one -- when the
-score is too close to neutral, confidence is Low, or the mechanical
-stop/target math produces a risk/reward below 1.2:1 (a trade you wouldn't
-actually take). Every generated setup with a real direction is logged as a
+`app/services/analysis/trade_setup.py` turns the Intelligence Score into a
+full setup -- bias, entry, stop (invalidation), and three staged targets
+(TP1 at 1R to de-risk, TP2 at the next structural level, TP3 as an
+extension for any portion left to run), all explicitly labeled with the
+timeframe they're built for (daily-bar swing structure; no intraday/weekly
+variant yet). Direction and conviction come from the score (macro +
+technical + sentiment + geopolitical), but the levels come from pure price
+structure (trend, RSI, support/resistance, ATR), since a macro view alone
+doesn't tell you where to place a stop. It deliberately returns "no setup"
+-- rather than manufacturing one -- when the score is too close to neutral,
+confidence is Low, or the mechanical stop/TP2 math produces a risk/reward
+below 1.2:1 (a trade you wouldn't actually take). Every generated setup
+with a real direction is logged as a
 `Prediction` every 6 hours (`job_log_trade_setups` in `scheduler.py`), so
 the calibration loop in spec step 10 -- previously only reachable by hand
 via `POST /predictions` -- now actually accumulates data on its own. Same

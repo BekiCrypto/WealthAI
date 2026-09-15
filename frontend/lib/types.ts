@@ -69,21 +69,30 @@ export interface TechnicalSnapshot {
   volatility_20d: number | null;
 }
 
+export interface TradeTarget {
+  label: string; // TP1, TP2, TP3
+  price: number | null;
+  pct_from_entry: number | null;
+  r_multiple: number | null;
+  note: string;
+}
+
 export interface TradeSetup {
   symbol: string;
   redistributable: boolean;
   price_disclosure: string | null;
   direction: "long" | "short" | "none";
   setup_type: string | null;
+  timeframe: string;
+  timeframe_note: string;
   confidence: "Low" | "Medium" | "High";
   probability: number;
   entry_price: number | null;
-  stop_price: number | null;
-  target_price: number | null;
-  risk_reward: number | null;
   entry_pct_from_last: number | null;
+  stop_price: number | null;
   stop_pct_from_entry: number | null;
-  target_pct_from_entry: number | null;
+  risk_reward: number | null;
+  targets: TradeTarget[];
   reasoning: string;
   invalidation: string;
   main_risk: string;
